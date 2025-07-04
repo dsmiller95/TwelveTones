@@ -50,7 +50,7 @@ def create_cell(index_in_octave: int) -> Cell:
         index_in_octave: a value between 0 and 11 representing the index in an octave.
 
     Returns:
-        A new Cell instance with display set to text[0]
+        A new Cell instance
     """
     return Cell(
         display=f'{index_in_octave:<2}' if AS_NUMBERS else KEY_RENDER[index_in_octave],

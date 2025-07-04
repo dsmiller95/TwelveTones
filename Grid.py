@@ -60,23 +60,39 @@ def run_interactive_demo(sleep_seconds: float = 0.5) -> None:
 
     try:
         print("Use arrow keys to move cursor, space to pause/resume, Ctrl+C to exit")
+
+        last_auto_advance_time = time.time()
+
         while True:
+            current_time = time.time()
+            input_received = False
+
             # Process any pending input
             while not input_queue.empty():
                 try:
                     input_event = input_queue.get_nowait()
                     game_state = handle_input(input_event, game_state)
+                    input_received = True
                 except queue.Empty:
                     break
 
-            # Render current state
-            renderer.render(game_state.grid, game_state.cursor_row, game_state.cursor_col)
+            # Check if it's time for auto-advance
+            should_auto_advance = (
+                game_state.is_auto_moving and
+                current_time - last_auto_advance_time >= sleep_seconds
+            )
 
-            # Auto-advance if enabled
-            if game_state.is_auto_moving:
+            # Auto-advance if enabled and enough time has passed
+            if should_auto_advance:
                 game_state = advance_cursor(game_state)
+                last_auto_advance_time = current_time
 
-            time.sleep(sleep_seconds)
+            # Render if we received input or auto-advanced
+            if input_received or should_auto_advance:
+                renderer.render(game_state.grid, game_state.cursor_row, game_state.cursor_col)
+
+            # Small sleep to prevent busy waiting
+            time.sleep(0.01)  # 10ms polling interval
 
     except KeyboardInterrupt:
         renderer.clear()
