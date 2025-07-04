@@ -52,20 +52,25 @@ class RichRenderer:
         render_out = Text()
 
         for r, row in enumerate(grid):
+            caret_pos = -1
+            total_chars = 0
             # Row of characters
             for c, cell in enumerate(row):
-                style = self.HIGHLIGHT_STYLE if (r == caret_row and c == caret_col) else ""
+                style = ""
+                if r == caret_row and c == caret_col:
+                    caret_pos = total_chars
+                    style = self.HIGHLIGHT_STYLE
                 render_out.append(cell.display, style=style)
+                total_chars += len(cell.display)
                 if c != len(row) - 1:
                     render_out.append(self.CELL_SEP)
+                    total_chars += len(self.CELL_SEP)
             render_out.append("\n")
 
             # Caret line
-            for c in range(len(row)):
-                render_out.append("^" if (r == caret_row and c == caret_col) else " ")
-                if c != len(row) - 1:
-                    render_out.append(self.CELL_SEP)
-            render_out.append("\n")
+            if caret_pos != -1:
+                render_out.append(" " * caret_pos)
+                render_out.append("^", style=self.HIGHLIGHT_STYLE)
             render_out.append("\n")
 
         self._console.clear()
