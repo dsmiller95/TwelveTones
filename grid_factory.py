@@ -1,9 +1,11 @@
 ﻿from __future__ import annotations
 
+import random
+
 """Grid factory functions for creating grids."""
 
 from typing import Final
-from models import Cell, Grid
+from models import Grid, create_cell
 
 
 def create_mock_grid() -> Grid:
@@ -16,6 +18,9 @@ def create_mock_grid() -> Grid:
         ["p", "e", "f", "w", "m"],
     ]
 
-    return [[Cell(
-        display=ch
-    ) for ch in row] for row in mock_grid_letters]
+    notes = list(range(12))
+    random.shuffle(notes)
+
+    return [[create_cell(ch) for ch in row] for row in mock_grid_letters]
+
+

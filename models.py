@@ -8,11 +8,31 @@ from enum import Enum
 
 @dataclass(slots=True, frozen=True)
 class Cell:
-    """A single grid cell containing one printable character."""
+    """A single grid cell containing one printable character.
+
+    Note: Use create_cell() function to create instances instead of direct construction.
+    """
 
     display: str
+    index_in_octave: int
 
 
+def create_cell(text: str, index_in_octave: int = 0) -> Cell:
+    """Create a Cell with display set to the first character of the text.
+
+    Args:
+        text: String to extract the first character from
+        index_in_octave: Optional index value for the cell
+
+    Returns:
+        A new Cell instance with display set to text[0]
+    """
+    if not text:
+        raise ValueError("Text cannot be empty")
+    return Cell(display=text[0], index_in_octave=index_in_octave)
+
+
+# Type aliases
 Grid = list[list[Cell]]
 
 
