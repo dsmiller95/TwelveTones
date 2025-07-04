@@ -49,28 +49,27 @@ class RichRenderer:
 
     def render(self, grid: Grid, caret_row: int, caret_col: int) -> None:
         """Clear screen and draw a fresh frame."""
-        self._console.clear()
+        render_out = Text()
 
         for r, row in enumerate(grid):
             # Row of characters
-            text_row = Text()
             for c, cell in enumerate(row):
                 style = self.HIGHLIGHT_STYLE if (r == caret_row and c == caret_col) else ""
-                text_row.append(cell.display, style=style)
+                render_out.append(cell.display, style=style)
                 if c != len(row) - 1:
-                    text_row.append(self.CELL_SEP)
-            self._console.print(text_row)
+                    render_out.append(self.CELL_SEP)
+            render_out.append("\n")
 
             # Caret line
-            caret_line = Text()
             for c in range(len(row)):
-                caret_line.append("^" if (r == caret_row and c == caret_col) else " ")
+                render_out.append("^" if (r == caret_row and c == caret_col) else " ")
                 if c != len(row) - 1:
-                    caret_line.append(self.CELL_SEP)
-            self._console.print(caret_line)
+                    render_out.append(self.CELL_SEP)
+            render_out.append("\n")
+            render_out.append("\n")
 
-            # Spacer blank line
-            self._console.print()
+        self._console.clear()
+        self._console.print(render_out)
 
     def clear(self) -> None:
         """Clear console, handy on exit."""
