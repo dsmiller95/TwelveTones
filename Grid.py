@@ -1,6 +1,6 @@
 ﻿from __future__ import annotations
 
-"""Grid demo using **RichRenderer** (Python 3.13)
+"""Grid demo using **RichRenderer** (Python 3.13)
 
 Run with:
     pip install rich keyboard
@@ -8,108 +8,13 @@ Run with:
 """
 
 import time
-from dataclasses import dataclass
-from enum import Enum
-from typing import Final
+import queue
 
 import keyboard
 from rich_renderer import RichRenderer
-
-# ────────────────────────────────────────────────────────────────────────────
-# Domain model
-# ────────────────────────────────────────────────────────────────────────────
-
-@dataclass(slots=True, frozen=True)
-class Cell:
-    """A single grid cell containing one printable character."""
-
-    display: str
-
-
-Grid = list[list[Cell]]
-
-
-class InputEvent(Enum):
-    """Domain-mapped input events."""
-    MOVE_UP = "move_up"
-    MOVE_DOWN = "move_down"
-    MOVE_LEFT = "move_left"
-    MOVE_RIGHT = "move_right"
-    TOGGLE_PAUSE = "toggle_pause"
-
-
-@dataclass(slots=True)
-class GameState:
-    """Complete game state including grid, cursor position, and movement status."""
-    grid: Grid
-    cursor_row: int
-    cursor_col: int
-    is_auto_moving: bool
-
-# ────────────────────────────────────────────────────────────────────────────
-# Mock data (replace with your own source if desired)
-# ────────────────────────────────────────────────────────────────────────────
-
-MOCK_GRID_LETTERS: Final[list[list[str]]] = [
-    ["I", "A", "B", "C", "P"],
-    ["K", "E", "F", "A", "M"],
-    ["B", "R", "9", "p", "E"],
-    ["b", "a", "l", "f", "g"],
-    ["p", "e", "f", "w", "m"],
-]
-
-GRID: Final[Grid] = [[Cell(ch) for ch in row] for row in MOCK_GRID_LETTERS]
-ROWS: Final[int] = len(GRID)
-COLS: Final[int] = len(GRID[0])
-
-# ────────────────────────────────────────────────────────────────────────────
-# Input handling
-# ────────────────────────────────────────────────────────────────────────────
-
-def handle_input(event: InputEvent, current_state: GameState) -> GameState:
-    """Process an input event and return a new game state."""
-    new_row = current_state.cursor_row
-    new_col = current_state.cursor_col
-    new_auto_moving = current_state.is_auto_moving
-
-    if event == InputEvent.TOGGLE_PAUSE:
-        new_auto_moving = not current_state.is_auto_moving
-    elif event == InputEvent.MOVE_UP:
-        new_auto_moving = False
-        new_row = (current_state.cursor_row - 1) % ROWS
-    elif event == InputEvent.MOVE_DOWN:
-        new_auto_moving = False
-        new_row = (current_state.cursor_row + 1) % ROWS
-    elif event == InputEvent.MOVE_LEFT:
-        new_auto_moving = False
-        new_col = (current_state.cursor_col - 1) % COLS
-    elif event == InputEvent.MOVE_RIGHT:
-        new_auto_moving = False
-        new_col = (current_state.cursor_col + 1) % COLS
-
-    return GameState(
-        grid=current_state.grid,
-        cursor_row=new_row,
-        cursor_col=new_col,
-        is_auto_moving=new_auto_moving
-    )
-
-
-def advance_cursor(state: GameState) -> GameState:
-    """Advance cursor automatically (rightwards with wrap)."""
-    new_col = state.cursor_col + 1
-    new_row = state.cursor_row
-
-    if new_col >= COLS:
-        new_col = 0
-        new_row = (state.cursor_row + 1) % ROWS
-
-    return GameState(
-        grid=state.grid,
-        cursor_row=new_row,
-        cursor_col=new_col,
-        is_auto_moving=state.is_auto_moving
-    )
+from models import GameState, InputEvent
+from grid_factory import create_mock_grid
+from input_handler import handle_input, advance_cursor
 
 # ────────────────────────────────────────────────────────────────────────────
 # Interactive demo loop
@@ -119,16 +24,21 @@ def run_interactive_demo(sleep_seconds: float = 0.5) -> None:
     """Run the interactive grid demo with keyboard input."""
     renderer = RichRenderer()
 
-    # Initialize game state
+    # Create grid and initialize game state
+    grid = create_mock_grid()
+    rows = len(grid)
+    cols = len(grid[0])
+
     game_state = GameState(
-        grid=GRID,
+        grid=grid,
         cursor_row=0,
         cursor_col=0,
-        is_auto_moving=True
+        is_auto_moving=True,
+        rows=rows,
+        cols=cols
     )
 
     # Input queue for thread-safe communication
-    import queue
     input_queue = queue.Queue()
 
     def on_key_event(event):
