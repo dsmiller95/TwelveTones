@@ -1,28 +1,37 @@
 ﻿from __future__ import annotations
 
-import time
+"""Console grid renderer (Python 3.13‑ready)
+
+Improvements
+────────────
+• Uses a **single `render`** call that rewrites the screen in‑place (no scrolling backlog / ghosting).
+• Only clears the screen once; further frames just move the cursor to HOME.
+• Fully typed (`mypy --strict`).
+• No external deps – plain ANSI, works on modern Windows 10+ & UNIX terms.
+"""
+
 from dataclasses import dataclass
-from typing import Final, List
+from typing import Final
+import sys
+import time
 
+# ────────────────────────────────────────────────────────────────────────────
+# Domain model
+# ────────────────────────────────────────────────────────────────────────────
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True, frozen=True)
 class Cell:
-    """Represents a single grid cell.
+    """Single grid cell containing *one* printable character."""
 
-    Attributes
-    ----------
-    display
-        A *single* character string shown when the grid is rendered.
-    """
-
-    display: str
+    display: str  # one‑char string
 
 
-# ---------------------------------------------------------------------------
-# Mock data -----------------------------------------------------------------
-# ---------------------------------------------------------------------------
+Grid = list[list[Cell]]
 
-# A 5×5 grid of example characters. Feel free to replace with your own data.
+# ────────────────────────────────────────────────────────────────────────────
+# Mock data – replace with real data as needed
+# ────────────────────────────────────────────────────────────────────────────
+
 MOCK_GRID_LETTERS: Final[list[list[str]]] = [
     ["I", "A", "B", "C", "P"],
     ["K", "E", "F", "A", "M"],
@@ -31,77 +40,83 @@ MOCK_GRID_LETTERS: Final[list[list[str]]] = [
     ["p", "e", "f", "w", "m"],
 ]
 
-# Convert raw letters to a grid of `Cell` objects (typed list of lists).
-Grid = List[List[Cell]]
 GRID: Final[Grid] = [[Cell(ch) for ch in row] for row in MOCK_GRID_LETTERS]
+ROWS: Final[int] = len(GRID)
+COLS: Final[int] = len(GRID[0])
 
-# Spacing constants for rendering.
-CELL_SEPARATOR: Final[str] = "  "  # Two spaces between characters
-BLANK_LINE: Final[str] = "\n"      # Single blank line between grid rows
+# ────────────────────────────────────────────────────────────────────────────
+# Rendering constants
+# ────────────────────────────────────────────────────────────────────────────
+
+CELL_SEP:   Final[str]   = "  "  # two spaces
+SLEEP_SEC:  Final[float] = 0.5
+
+ANSI_CLEAR: Final[str] = "\033[2J"  # clear whole screen
+ANSI_HOME:  Final[str] = "\033[H"   # move cursor to 0,0
+
+# Pre‑compute the static character rows to avoid recomputing every frame
+CHAR_ROWS: Final[list[str]] = [CELL_SEP.join(cell.display for cell in row) for row in GRID]
+ROW_WIDTH: Final[int] = len(CHAR_ROWS[0])  # width in characters (all rows equal)
 
 
-# ---------------------------------------------------------------------------
-# Rendering functions --------------------------------------------------------
-# ---------------------------------------------------------------------------
+# ────────────────────────────────────────────────────────────────────────────
+# Render function (no scrolling artefacts)
+# ────────────────────────────────────────────────────────────────────────────
 
-def render_grid(grid: Grid, caret_row: int, caret_col: int) -> None:
-    """Render the grid to the console, highlighting the caret position.
+def render(caret_row: int, caret_col: int) -> None:
+    """Render the current frame *in place*.
 
-    The function prints **two** lines per grid row:
-    1. The characters themselves, separated by spaces.
-    2. Either a caret ("^") under the current cell *or* blank spaces.
-
-    A blank line is printed after each pair to visually separate rows.
+    The function moves the cursor to HOME and writes the entire view in a
+    single `sys.stdout.write`, then flushes – so the terminal history keeps
+    **one copy** of the frame, not an ever‑growing backlog.
     """
 
-    for r, row in enumerate(grid):
-        # Line 1: characters with spacing.
-        char_line = CELL_SEPARATOR.join(cell.display for cell in row)
-        print(char_line)
+    lines: list[str] = []
+    for r in range(ROWS):
+        lines.append(CHAR_ROWS[r])
 
-        # Line 2: caret row if this is the active row; otherwise spaces.
         if r == caret_row:
-            caret_parts = []
-            for c in range(len(row)):
-                caret_parts.append("^" if c == caret_col else " ")
-            caret_line = CELL_SEPARATOR.join(caret_parts)
-            print(caret_line)
+            # Build a row with a caret under the active column
+            caret_parts = ["^" if c == caret_col else " " for c in range(COLS)]
+            caret_line = CELL_SEP.join(caret_parts)
+            # Ensure identical width so we fully overwrite prior frame
+            lines.append(caret_line.ljust(ROW_WIDTH))
         else:
-            # Same width as char_line but blank (spaces only).
-            print(" " * len(char_line))
+            lines.append(" " * ROW_WIDTH)
 
-        # Spacer line between rows.
-        print(BLANK_LINE, end="")
+        lines.append("")  # blank line between grid rows
+
+    frame: str = "\n".join(lines)
+    sys.stdout.write(ANSI_HOME + frame)
+    sys.stdout.flush()
 
 
-# ---------------------------------------------------------------------------
-# Main loop ------------------------------------------------------------------
-# ---------------------------------------------------------------------------
+# ────────────────────────────────────────────────────────────────────────────
+# Main loop
+# ────────────────────────────────────────────────────────────────────────────
 
 def main() -> None:
-    grid = GRID
-    rows, cols = len(grid), len(grid[0])
-
     caret_row = 0
     caret_col = 0
 
+    # Clear once at start so we begin with a blank screen
+    sys.stdout.write(ANSI_CLEAR)
+    sys.stdout.flush()
+
     try:
         while True:
-            # Clear screen by printing ANSI escape (works on most modern terms).
-            print("\033[2J\033[H", end="")  # Clear and move cursor to home.
+            render(caret_row, caret_col)
 
-            render_grid(grid, caret_row, caret_col)
-
-            # Advance caret position.
+            # Advance caret position (right → wrap)
             caret_col += 1
-            if caret_col >= cols:
+            if caret_col >= COLS:
                 caret_col = 0
-                caret_row = (caret_row + 1) % rows
+                caret_row = (caret_row + 1) % ROWS
 
-            # Wait 500 ms.
-            time.sleep(0.5)
+            time.sleep(SLEEP_SEC)
     except KeyboardInterrupt:
-        print("\nExited.")
+        sys.stdout.write("\nExited.\n")
+        sys.stdout.flush()
 
 
 if __name__ == "__main__":
