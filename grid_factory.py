@@ -42,6 +42,7 @@ KEY_RENDER: Final[list[str]] = [
     "__"
 ]
 
+AS_NUMBERS: bool = False
 def create_cell(index_in_octave: int) -> Cell:
     """Create a Cell with display set to the first character of the text.
 
@@ -51,4 +52,7 @@ def create_cell(index_in_octave: int) -> Cell:
     Returns:
         A new Cell instance with display set to text[0]
     """
-    return Cell(display=KEY_RENDER[index_in_octave], index_in_octave=index_in_octave)
+    return Cell(
+        display=f'{index_in_octave:<2}' if AS_NUMBERS else KEY_RENDER[index_in_octave],
+        index_in_octave=index_in_octave
+    )
