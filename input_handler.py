@@ -81,11 +81,7 @@ def handle_input(event: InputEvent, current_state: GameState) -> Tuple[GameState
 
 def advance_cursor(state: GameState) -> GameState:
     """Advance cursor automatically (rightwards with wrap)."""
-    new_position = state.primary_cursor + Vector2(1, 0)
-
-    if new_position.x >= state.grid_size.x:
-        new_position.x = 0
-        new_position.y = (state.primary_cursor.y + 1) % state.grid_size.y
+    new_position = move_cursor(state.primary_cursor, Vector2(1, 0), state.grid_size)
 
     return GameState(
         grid=state.grid,
@@ -95,3 +91,12 @@ def advance_cursor(state: GameState) -> GameState:
         grid_size=state.grid_size,
         last_auto_advance_time=state.last_auto_advance_time
     )
+
+def move_cursor(cursor: Vector2, direction: Vector2, bounds: Vector2) -> Vector2:
+    """Move cursor in a specified direction."""
+    new_cursor = cursor + direction
+    if new_cursor.x >= bounds.x:
+        new_cursor += Vector2(-bounds.x, 1)
+    new_cursor.x = new_cursor.x % bounds.x
+    new_cursor.y = new_cursor.y % bounds.y
+    return new_cursor
