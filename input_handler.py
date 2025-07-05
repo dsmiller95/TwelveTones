@@ -16,8 +16,8 @@ def time_step(game_state: GameState, game_context: GameContext) -> Tuple[GameSta
     while not game_context.input_queue.empty():
         try:
             input_event = game_context.input_queue.get_nowait()
-            game_state = handle_input(input_event, game_state)
-            emitted_events.append(GameEventEmitSound(game_state.cell_at_cursor()))
+            (game_state, emitted_tmp) = handle_input(input_event, game_state)
+            emitted_events.extend(emitted_tmp)
             any_change = True
         except queue.Empty:
             break
@@ -38,28 +38,33 @@ def time_step(game_state: GameState, game_context: GameContext) -> Tuple[GameSta
 
     return game_state, emitted_events
 
-def handle_input(event: InputEvent, current_state: GameState) -> GameState:
+def handle_input(event: InputEvent, current_state: GameState) -> Tuple[GameState, list[GameEvent]]:
     """Process an input event and return a new game state."""
     new_row = current_state.cursor_row
     new_col = current_state.cursor_col
     new_auto_moving = current_state.is_auto_moving
+    should_emit_note: bool = False
 
     if event == InputEvent.TOGGLE_PAUSE:
         new_auto_moving = not current_state.is_auto_moving
     elif event == InputEvent.MOVE_UP:
         new_auto_moving = False
         new_row = (current_state.cursor_row - 1) % current_state.rows
+        should_emit_note = True
     elif event == InputEvent.MOVE_DOWN:
         new_auto_moving = False
         new_row = (current_state.cursor_row + 1) % current_state.rows
+        should_emit_note = True
     elif event == InputEvent.MOVE_LEFT:
         new_auto_moving = False
         new_col = (current_state.cursor_col - 1) % current_state.cols
+        should_emit_note = True
     elif event == InputEvent.MOVE_RIGHT:
         new_auto_moving = False
         new_col = (current_state.cursor_col + 1) % current_state.cols
+        should_emit_note = True
 
-    return GameState(
+    new_game_state = GameState(
         grid=current_state.grid,
         cursor_row=new_row,
         cursor_col=new_col,
@@ -68,6 +73,11 @@ def handle_input(event: InputEvent, current_state: GameState) -> GameState:
         cols=current_state.cols,
         last_auto_advance_time=current_state.last_auto_advance_time
     )
+    emitted_events: list[GameEvent] = []
+    if should_emit_note:
+        cell = new_game_state.cell_at_cursor()
+        emitted_events.append(GameEventEmitSound(cell))
+    return new_game_state, emitted_events
 
 
 def advance_cursor(state: GameState) -> GameState:
