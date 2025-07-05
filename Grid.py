@@ -12,9 +12,10 @@ import queue
 
 import keyboard
 from rich_renderer import RichRenderer
-from models import GameState, InputEvent
+from models import GameState, InputEvent, GameContext, GameEventEmitSound, GameEventRenderBoard
 from grid_factory import create_mock_grid
-from input_handler import handle_input, advance_cursor
+from input_handler import handle_input, advance_cursor, time_step
+
 
 # ────────────────────────────────────────────────────────────────────────────
 # Interactive demo loop
@@ -35,11 +36,12 @@ def run_interactive_demo(sleep_seconds: float = 0.5) -> None:
         cursor_col=0,
         is_auto_moving=True,
         rows=rows,
-        cols=cols
+        cols=cols,
+        last_auto_advance_time=time.time()
     )
 
     # Input queue for thread-safe communication
-    input_queue = queue.Queue()
+    input_queue: queue.Queue[InputEvent] = queue.Queue()
 
     def on_key_event(event):
         """Handle keyboard events and map them to input events."""
@@ -64,32 +66,23 @@ def run_interactive_demo(sleep_seconds: float = 0.5) -> None:
         last_auto_advance_time = time.time()
 
         while True:
-            current_time = time.time()
-            input_received = False
-
-            # Process any pending input
-            while not input_queue.empty():
-                try:
-                    input_event = input_queue.get_nowait()
-                    game_state = handle_input(input_event, game_state)
-                    input_received = True
-                except queue.Empty:
-                    break
-
-            # Check if it's time for auto-advance
-            should_auto_advance = (
-                game_state.is_auto_moving and
-                current_time - last_auto_advance_time >= sleep_seconds
+            game_context = GameContext(
+                current_time=time.time(),
+                time_per_advance=sleep_seconds,
+                input_queue=input_queue
             )
 
-            # Auto-advance if enabled and enough time has passed
-            if should_auto_advance:
-                game_state = advance_cursor(game_state)
-                last_auto_advance_time = current_time
+            (game_state, emitted_events) = time_step(game_state, game_context)
 
-            # Render if we received input or auto-advanced
-            if input_received or should_auto_advance:
-                renderer.render(game_state.grid, game_state.cursor_row, game_state.cursor_col)
+            # loop through and handel all emitted events
+            for event in emitted_events:
+                if isinstance(event, GameEventEmitSound):
+                    # 0-11 inclusive
+                    sound_index_in_octave = event.cell.index_in_octave
+                    # Here you would handle the sound emission logic
+                    print(f"Emitting sound for cell: {event.cell.display} {sound_index_in_octave}")
+                elif isinstance(event, GameEventRenderBoard):
+                    renderer.render(game_state.grid, game_state.cursor_row, game_state.cursor_col)
 
             # Small sleep to prevent busy waiting
             time.sleep(0.01)  # 10ms polling interval

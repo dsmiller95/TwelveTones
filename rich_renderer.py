@@ -1,5 +1,7 @@
 ﻿from __future__ import annotations
 
+from models import Grid
+
 """RichRenderer module
 
 Renders a square grid using the **rich** library, highlighting the active cell
@@ -21,14 +23,6 @@ from rich.text import Text
 # ────────────────────────────────────────────────────────────────────────────
 # Minimal protocol to decouple from concrete Cell class
 # ────────────────────────────────────────────────────────────────────────────
-
-class HasDisplay(Protocol):
-    """Any object with a `display` string attribute."""
-
-    display: str
-
-
-Grid = list[list[HasDisplay]]
 
 # ────────────────────────────────────────────────────────────────────────────
 # Renderer implementation

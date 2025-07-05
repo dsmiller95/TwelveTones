@@ -1,9 +1,42 @@
 ﻿from __future__ import annotations
 
+import queue
+from typing import Tuple
+
 """Input handling functions for the grid application."""
 
-from models import InputEvent, GameState
+from models import InputEvent, GameState, GameContext, GameEventEmitSound, GameEvent, GameEventRenderBoard
 
+
+def time_step(game_state: GameState, game_context: GameContext) -> Tuple[GameState, list[GameEvent]]:
+    """Advance the game state by one time step."""
+    emitted_events: list[GameEvent] = []
+    any_change = False
+
+    while not game_context.input_queue.empty():
+        try:
+            input_event = game_context.input_queue.get_nowait()
+            game_state = handle_input(input_event, game_state)
+            emitted_events.append(GameEventEmitSound(game_state.cell_at_cursor()))
+            any_change = True
+        except queue.Empty:
+            break
+
+    if game_state.is_auto_moving:
+        should_auto_advance = (
+                game_state.is_auto_moving and
+                game_context.current_time - game_state.last_auto_advance_time >= game_context.time_per_advance
+        )
+        if should_auto_advance:
+            game_state = advance_cursor(game_state)
+            game_state.last_auto_advance_time = game_context.current_time
+            emitted_events.append(GameEventEmitSound(game_state.cell_at_cursor()))
+            any_change = True
+
+    if any_change:
+        emitted_events.append(GameEventRenderBoard())
+
+    return game_state, emitted_events
 
 def handle_input(event: InputEvent, current_state: GameState) -> GameState:
     """Process an input event and return a new game state."""
@@ -32,7 +65,8 @@ def handle_input(event: InputEvent, current_state: GameState) -> GameState:
         cursor_col=new_col,
         is_auto_moving=new_auto_moving,
         rows=current_state.rows,
-        cols=current_state.cols
+        cols=current_state.cols,
+        last_auto_advance_time=current_state.last_auto_advance_time
     )
 
 
@@ -51,5 +85,6 @@ def advance_cursor(state: GameState) -> GameState:
         cursor_col=new_col,
         is_auto_moving=state.is_auto_moving,
         rows=state.rows,
-        cols=state.cols
+        cols=state.cols,
+        last_auto_advance_time=state.last_auto_advance_time
     )

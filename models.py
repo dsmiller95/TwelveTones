@@ -1,5 +1,7 @@
 ﻿from __future__ import annotations
 
+import queue
+
 """Domain models for the grid application."""
 
 from dataclasses import dataclass
@@ -38,3 +40,29 @@ class GameState:
     is_auto_moving: bool
     rows: int
     cols: int
+    last_auto_advance_time: float
+
+    def cell_at_cursor(self) -> Cell:
+        """Get the cell at the current cursor position."""
+        return self.grid[self.cursor_row][self.cursor_col]
+
+class GameEvent:
+    """Base class for game events. Can be extended for specific event types."""
+    pass
+
+class GameEventEmitSound(GameEvent):
+    """Event to emit a sound for the current cell."""
+    def __init__(self, cell: Cell):
+        self.cell = cell
+
+class GameEventRenderBoard(GameEvent):
+    """Event to render the current board out to the console."""
+    def __init__(self):
+        pass
+
+@dataclass(slots=True)
+class GameContext:
+    """Context in which the game operates. contains external information such as time."""
+    current_time: float
+    time_per_advance: float = 0.5  # Default time per auto-advance in seconds
+    input_queue: queue.Queue[InputEvent] = queue.Queue()
