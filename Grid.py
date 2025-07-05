@@ -1,5 +1,7 @@
 ﻿from __future__ import annotations
 
+from sound_system import play_note
+
 """Grid demo using **RichRenderer** (Python 3.13)
 
 Run with:
@@ -77,10 +79,8 @@ def run_interactive_demo(sleep_seconds: float = 0.5) -> None:
             # loop through and handel all emitted events
             for event in emitted_events:
                 if isinstance(event, GameEventEmitSound):
-                    # 0-11 inclusive
                     sound_index_in_octave = event.cell.index_in_octave
-                    # Here you would handle the sound emission logic
-                    print(f"Emitting sound for cell: {event.cell.display} {sound_index_in_octave}")
+                    play_note(sound_index_in_octave)
                 elif isinstance(event, GameEventRenderBoard):
                     renderer.render(game_state.grid, game_state.cursor_row, game_state.cursor_col)
 
