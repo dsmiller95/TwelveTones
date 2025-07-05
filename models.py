@@ -6,6 +6,7 @@ import queue
 
 from dataclasses import dataclass
 from enum import Enum
+from pygame.math import Vector2
 
 
 @dataclass(slots=True, frozen=True)
@@ -35,16 +36,16 @@ class InputEvent(Enum):
 class GameState:
     """Complete game state including grid, cursor position, and movement status."""
     grid: Grid
-    cursor_row: int
-    cursor_col: int
+    cursor_position: Vector2
     is_auto_moving: bool
-    rows: int
-    cols: int
+    grid_size: Vector2
     last_auto_advance_time: float
 
     def cell_at_cursor(self) -> Cell:
         """Get the cell at the current cursor position."""
-        return self.grid[self.cursor_row][self.cursor_col]
+        row = int(self.cursor_position.y)
+        col = int(self.cursor_position.x)
+        return self.grid[row][col]
 
 class GameEvent:
     """Base class for game events. Can be extended for specific event types."""
