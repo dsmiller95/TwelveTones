@@ -1,5 +1,6 @@
 ﻿from __future__ import annotations
 
+from conifg import Config
 from sound_system import play_note
 
 """Grid demo using **RichRenderer** (Python 3.13)
@@ -23,7 +24,7 @@ from input_handler import handle_input, advance_cursor, time_step
 # Interactive demo loop
 # ────────────────────────────────────────────────────────────────────────────
 
-def run_interactive_demo(sleep_seconds: float = 0.5) -> None:
+def run_interactive_demo(config: Config) -> None:
     """Run the interactive grid demo with keyboard input."""
     renderer = RichRenderer()
 
@@ -70,7 +71,7 @@ def run_interactive_demo(sleep_seconds: float = 0.5) -> None:
         while True:
             game_context = GameContext(
                 current_time=time.time(),
-                time_per_advance=sleep_seconds,
+                time_per_advance=config.auto_advance_period,
                 input_queue=input_queue
             )
 
@@ -80,7 +81,10 @@ def run_interactive_demo(sleep_seconds: float = 0.5) -> None:
             for event in emitted_events:
                 if isinstance(event, GameEventEmitSound):
                     sound_index_in_octave = event.cell.index_in_octave
-                    play_note(sound_index_in_octave)
+                    play_note(
+                        sound_index_in_octave,
+                        duration=config.note_duration
+                    )
                 elif isinstance(event, GameEventRenderBoard):
                     renderer.render(game_state.grid, game_state.cursor_row, game_state.cursor_col)
 
