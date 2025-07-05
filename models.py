@@ -36,16 +36,23 @@ class InputEvent(Enum):
 class GameState:
     """Complete game state including grid, cursor position, and movement status."""
     grid: Grid
-    cursor_position: Vector2
+    cursors: list[Vector2]
+    primary_cursor: Vector2
     is_auto_moving: bool
     grid_size: Vector2
     last_auto_advance_time: float
 
     def cell_at_cursor(self) -> Cell:
         """Get the cell at the current cursor position."""
-        row = int(self.cursor_position.y)
-        col = int(self.cursor_position.x)
+        row = int(self.primary_cursor.y)
+        col = int(self.primary_cursor.x)
         return self.grid[row][col]
+
+    def cells_at_cursors(self) -> list[Cell]:
+        """Get the cells at all cursor positions."""
+        all_cursors = self.cursors.copy()
+        all_cursors.append(self.primary_cursor)
+        return [self.grid[int(cursor.y)][int(cursor.x)] for cursor in all_cursors]
 
 class GameEvent:
     """Base class for game events. Can be extended for specific event types."""
