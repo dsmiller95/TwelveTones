@@ -4,7 +4,7 @@
 
 Run with:
     pip install rich keyboard
-    python main.py
+    python __main__.py
 """
 
 import time
@@ -98,7 +98,3 @@ def run_interactive_demo(sleep_seconds: float = 0.5) -> None:
         renderer.clear()
         keyboard.unhook_all()
         print("Exited.")
-
-
-if __name__ == "__main__":
-    run_interactive_demo()
