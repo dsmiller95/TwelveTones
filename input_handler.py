@@ -49,19 +49,19 @@ def handle_input(event: InputEvent, current_state: GameState) -> Tuple[GameState
         new_auto_moving = not current_state.is_auto_moving
     elif event == InputEvent.MOVE_UP:
         new_auto_moving = False
-        new_position.y = (current_state.primary_cursor.y - 1) % current_state.grid_size.y
+        new_position = move_cursor(new_position, Vector2(0, -1), current_state.grid_size)
         should_emit_note = True
     elif event == InputEvent.MOVE_DOWN:
         new_auto_moving = False
-        new_position.y = (current_state.primary_cursor.y + 1) % current_state.grid_size.y
+        new_position = move_cursor(new_position, Vector2(0, 1), current_state.grid_size)
         should_emit_note = True
     elif event == InputEvent.MOVE_LEFT:
         new_auto_moving = False
-        new_position.x = (current_state.primary_cursor.x - 1) % current_state.grid_size.x
+        new_position = move_cursor(new_position, Vector2(-1, 0), current_state.grid_size)
         should_emit_note = True
     elif event == InputEvent.MOVE_RIGHT:
         new_auto_moving = False
-        new_position.x = (current_state.primary_cursor.x + 1) % current_state.grid_size.x
+        new_position = move_cursor(new_position, Vector2(1, 0), current_state.grid_size)
         should_emit_note = True
 
     new_game_state = GameState(
