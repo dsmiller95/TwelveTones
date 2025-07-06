@@ -59,6 +59,9 @@ def run_interactive_demo(config: Config) -> None:
                 input_queue.put(InputEvent.MOVE_LEFT)
             elif event.name == 'right':
                 input_queue.put(InputEvent.MOVE_RIGHT)
+            elif event.name == 'c':
+                input_queue.put(InputEvent.ADD_CURSOR)
+        print(f"Key event: {event.name} ({event.event_type})")
 
     # Set up keyboard listener
     keyboard.hook(on_key_event)
@@ -82,7 +85,7 @@ def run_interactive_demo(config: Config) -> None:
                         duration=config.note_duration
                     )
                 elif isinstance(event, GameEventRenderBoard):
-                    renderer.render(game_state.grid, int(game_state.primary_cursor.y), int(game_state.primary_cursor.x))
+                    renderer.render(game_state)
 
             # Small sleep to prevent busy waiting
             time.sleep(0.01)  # 10ms polling interval
