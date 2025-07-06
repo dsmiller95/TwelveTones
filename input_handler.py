@@ -47,21 +47,11 @@ def handle_input(event: InputEvent, current_state: GameState) -> Tuple[GameState
 
     if event == InputEvent.TOGGLE_PAUSE:
         new_auto_moving = not current_state.is_auto_moving
-    elif event == InputEvent.MOVE_UP:
+    cursor_move = get_move_from_input(event)
+
+    if cursor_move is not None:
         new_auto_moving = False
-        new_position = move_cursor(new_position, Vector2(0, -1), current_state.grid_size)
-        should_emit_note = True
-    elif event == InputEvent.MOVE_DOWN:
-        new_auto_moving = False
-        new_position = move_cursor(new_position, Vector2(0, 1), current_state.grid_size)
-        should_emit_note = True
-    elif event == InputEvent.MOVE_LEFT:
-        new_auto_moving = False
-        new_position = move_cursor(new_position, Vector2(-1, 0), current_state.grid_size)
-        should_emit_note = True
-    elif event == InputEvent.MOVE_RIGHT:
-        new_auto_moving = False
-        new_position = move_cursor(new_position, Vector2(1, 0), current_state.grid_size)
+        new_position = move_cursor(new_position, cursor_move, current_state.grid_size)
         should_emit_note = True
 
     new_game_state = GameState(
@@ -78,6 +68,17 @@ def handle_input(event: InputEvent, current_state: GameState) -> Tuple[GameState
         emitted_events.append(GameEventEmitSound(cell))
     return new_game_state, emitted_events
 
+def get_move_from_input(event: InputEvent) -> Vector2 | None:
+    """Get the movement vector corresponding to an input event."""
+    if event == InputEvent.MOVE_UP:
+        return Vector2(0, -1)
+    elif event == InputEvent.MOVE_DOWN:
+        return Vector2(0, 1)
+    elif event == InputEvent.MOVE_LEFT:
+        return Vector2(-1, 0)
+    elif event == InputEvent.MOVE_RIGHT:
+        return Vector2(1, 0)
+    return None
 
 def advance_cursor(state: GameState) -> GameState:
     """Advance cursor automatically (rightwards with wrap)."""
