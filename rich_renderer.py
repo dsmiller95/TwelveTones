@@ -1,6 +1,8 @@
 ﻿from __future__ import annotations
 
-from models import Grid
+from pygame import Vector2
+
+from models import Grid, GameState
 
 """RichRenderer module
 
@@ -41,19 +43,21 @@ class RichRenderer:
     # Public API
     # ------------------------------------------------------------------
 
-    def render(self, grid: Grid, caret_row: int, caret_col: int) -> None:
+    def render(self, game: GameState) -> None:
         """Clear screen and draw a fresh frame."""
         render_out = Text()
 
-        for r, row in enumerate(grid):
-            caret_pos = -1
+        for r, row in enumerate(game.grid):
+            caret_positions: list[int] = []
             total_chars = 0
             # Row of characters
             for c, cell in enumerate(row):
                 style = ""
-                if r == caret_row and c == caret_col:
-                    caret_pos = total_chars
+                pos = Vector2(c, r)
+                if any(pos == cursor for cursor in game.all_cursors()):
+                    caret_positions.append(total_chars)
                     style = self.HIGHLIGHT_STYLE
+
                 render_out.append(cell.display, style=style)
                 total_chars += len(cell.display)
                 if c != len(row) - 1:
@@ -62,9 +66,15 @@ class RichRenderer:
             render_out.append("\n")
 
             # Caret line
-            if caret_pos != -1:
-                render_out.append(" " * caret_pos)
+            total_chars = 0
+            for i in range(len(caret_positions)):
+                spacing = caret_positions[i] - total_chars
+                render_out.append(" " * spacing)
+                total_chars += spacing
+
                 render_out.append("^", style=self.HIGHLIGHT_STYLE)
+                total_chars += 1
+
             render_out.append("\n")
 
         self._console.clear()

@@ -41,22 +41,31 @@ def time_step(game_state: GameState, game_context: GameContext) -> Tuple[GameSta
 
 def handle_input(event: InputEvent, current_state: GameState) -> Tuple[GameState, list[GameEvent]]:
     """Process an input event and return a new game state."""
-    new_position = Vector2(current_state.primary_cursor)
+    new_cursor = Vector2(current_state.primary_cursor)
     new_auto_moving = current_state.is_auto_moving
     should_emit_note: bool = False
+    new_cursors = current_state.cursors.copy()
 
     if event == InputEvent.TOGGLE_PAUSE:
         new_auto_moving = not current_state.is_auto_moving
+    elif event == InputEvent.ADD_CURSOR:
+        cursor_at_primary = any(
+            cursor == current_state.primary_cursor for cursor in current_state.cursors
+        )
+        if cursor_at_primary:
+            new_cursors.remove(current_state.primary_cursor)
+        else:
+            new_cursors.append(current_state.primary_cursor)
     cursor_move = get_move_from_input(event)
 
     if cursor_move is not None:
         new_auto_moving = False
-        new_position = move_cursor(new_position, cursor_move, current_state.grid_size)
+        new_cursor = move_cursor(new_cursor, cursor_move, current_state.grid_size)
         should_emit_note = True
 
     new_game_state = GameState(
         grid=current_state.grid,
-        primary_cursor=new_position,
+        primary_cursor=new_cursor,
         cursors=current_state.cursors,
         is_auto_moving=new_auto_moving,
         grid_size=current_state.grid_size,

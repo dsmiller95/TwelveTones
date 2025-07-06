@@ -30,6 +30,7 @@ class InputEvent(Enum):
     MOVE_LEFT = "move_left"
     MOVE_RIGHT = "move_right"
     TOGGLE_PAUSE = "toggle_pause"
+    ADD_CURSOR = "add_cursor"
 
 
 @dataclass(slots=True)
@@ -50,9 +51,11 @@ class GameState:
 
     def cells_at_cursors(self) -> list[Cell]:
         """Get the cells at all cursor positions."""
-        all_cursors = self.cursors.copy()
-        all_cursors.append(self.primary_cursor)
-        return [self.grid[int(cursor.y)][int(cursor.x)] for cursor in all_cursors]
+        return [self.grid[int(cursor.y)][int(cursor.x)] for cursor in self.all_cursors()]
+
+    def all_cursors(self) -> list[Vector2]:
+        """Get all cursor positions including the primary cursor."""
+        return self.cursors + [self.primary_cursor]
 
 class GameEvent:
     """Base class for game events. Can be extended for specific event types."""
