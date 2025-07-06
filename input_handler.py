@@ -31,7 +31,8 @@ def time_step(game_state: GameState, game_context: GameContext) -> Tuple[GameSta
         if should_auto_advance:
             game_state = advance_cursor(game_state)
             game_state.last_auto_advance_time = game_context.current_time
-            emitted_events.append(GameEventEmitSound(game_state.cell_at_cursor()))
+            all_cells = [GameEventEmitSound(cell) for cell in game_state.cells_at_cursors()]
+            emitted_events.extend(all_cells)
             any_change = True
 
     if any_change:
@@ -66,7 +67,7 @@ def handle_input(event: InputEvent, current_state: GameState) -> Tuple[GameState
     new_game_state = GameState(
         grid=current_state.grid,
         primary_cursor=new_cursor,
-        cursors=current_state.cursors,
+        cursors=new_cursors,
         is_auto_moving=new_auto_moving,
         grid_size=current_state.grid_size,
         last_auto_advance_time=current_state.last_auto_advance_time
@@ -92,11 +93,12 @@ def get_move_from_input(event: InputEvent) -> Vector2 | None:
 def advance_cursor(state: GameState) -> GameState:
     """Advance cursor automatically (rightwards with wrap)."""
     new_position = move_cursor(state.primary_cursor, Vector2(1, 0), state.grid_size)
+    new_cursors = [move_cursor(cursor, Vector2(1, 0), state.grid_size) for cursor in state.cursors]
 
     return GameState(
         grid=state.grid,
         primary_cursor=new_position,
-        cursors=state.cursors,
+        cursors=new_cursors,
         is_auto_moving=state.is_auto_moving,
         grid_size=state.grid_size,
         last_auto_advance_time=state.last_auto_advance_time
